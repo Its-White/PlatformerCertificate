@@ -2,8 +2,8 @@ var enemy = function(){
 	this.image = document.createElement("img");
 	this.x = canvas.width/2;
 	this.y = canvas.height/2;
-	this.width = 300;
-	this.height = 300;
+	this.width = 200;
+	this.height = 200;
 	this.velocityX = 0;
 	this.velocityY = 0;
 	this.angularVelocity = 0;
@@ -14,12 +14,25 @@ var enemy = function(){
 
 enemy.prototype.update = function(deltaTime){
 
-	if(playerIsDrawn == true){
-		enemy.x = player.position.x + 200;
-		enemy.y = player.position.y;
+
+	if(keyboard.isKeyDown(keyboard.KEY_SPACE) == true)
+	{
+		this.rotation -= deltaTime;
 	};
-	
+	if(keyboard.isKeyDown(keyboard.KEY_SPACE) == false)
+	{
+		this.rotation += deltaTime;
+	};
 };
+
+//enemy.prototype.update = function(deltaTime){
+
+	//if(playerIsDrawn == true){
+		//enemy.x = player.position.x + 200;
+		//enemy.y = player.position.y;
+	//};
+	
+//};
 
 enemy.prototype.draw = function(){
 	context.save();

@@ -48,20 +48,90 @@ var keyboard = new Keyboard();
 var player = new Player();
 var enemy = new enemy();
 
+
+var cells = [];
+
+function pixelToTile(pixel)
+{
+	return Math.floor(pixel / TILE);
+}
+
+function tileToPixel(tile_coord)
+{
+	return tile_coord * TILE;
+}
+
+function cellAtTileCoord(layer, tx, ty)
+{
+	if (tx < 0 || tx > MAP.tw)
+	{
+		return 1;
+	}
+	if(ty >= MAP.th)
+	{
+		return 0;
+	}
+	return cells[layer][tx][ty];
+}
+
+function cellAtPixelCoord(layer, x, y)
+{
+	var tx = pixelToTile(x);
+	var ty = pixelToTile(y);
+	
+	return cellAtTileCoord(layer, tx, ty);
+}
+
+
+
+function initializeCollision()
+{
+	//loop through each layer
+	for(layerIdx = 0; layerIdx < LAYER_COUNT; layerIdx++)
+	{
+		cells[layerIdx] = [];
+		var idx = 0;
+		
+		//loop through each row
+		for(var y=0; y< stage1.layers[layerIdx].height; ++y)
+		{
+			cells[layerIdx][y] = [];
+		
+			//loop through each cell
+			for(var x =0; x<stage1.layers[layerIdx].width; ++x)
+			{
+				if(stage1.layers[layerIdx].data[idx]!=0){
+					cells[layerIdx][y][x] =1;
+					cells[layerIdx][y-1][x] = 1;
+					cells[layerIdx][y-1][x+1] = 1;
+					cells[layerIdx][y][x+1] = 1;
+				}
+				else if(cells[layerIdx][x][y]!=1)
+				{
+					cells[layerIdx][y][x] =0;
+				}
+				
+				++idx;
+			}
+		}
+	}
+}
+
 function run()
 {
-	context.fillStyle = "#ccc";		
-	context.fillRect(0, 0, canvas.width, canvas.height);
 	
+	context.fillStyle = "#7EC0EE";		
+	context.fillRect(0, 0, canvas.width, canvas.height);
+	drawMap();
 	var deltaTime = getDeltaTime();
 	
 	//context.drawImage(chuckNorris, SCREEN_WIDTH/2 - chuckNorris.width/2, SCREEN_HEIGHT/2 - chuckNorris.height/2);
 	
-	player.update(deltaTime);
-	player.draw();
-	
 	enemy.update(deltaTime);
 	enemy.draw();
+	
+	player.update(deltaTime);
+	player.draw();
 	
 	// update the frame counter 
 	fpsTime += deltaTime;
@@ -77,6 +147,11 @@ function run()
 	context.fillStyle = "#f00";
 	context.font="14px Arial";
 	context.fillText("FPS: " + fps, 5, 20, 100);
+	
+
+
+	
+	
 }
 
 
