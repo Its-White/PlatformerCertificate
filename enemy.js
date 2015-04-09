@@ -12,7 +12,7 @@ var enemy = function(){
 	this.image.src = "enemy.png";
 };
 
-enemy.prototype.update = function(deltaTime){
+/*enemy.prototype.update = function(deltaTime){
 
 
 	if(keyboard.isKeyDown(keyboard.KEY_SPACE) == true)
@@ -24,7 +24,7 @@ enemy.prototype.update = function(deltaTime){
 		this.rotation += deltaTime;
 	};
 };
-
+*/
 //enemy.prototype.update = function(deltaTime){
 
 	//if(playerIsDrawn == true){

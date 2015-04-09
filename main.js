@@ -40,6 +40,35 @@ var fps = 0;
 var fpsCount = 0;
 var fpsTime = 0;
 
+var LAYER_COUNT = 3;
+var MAP = {tw:70, th:70};
+
+var TILE = 70;
+var TILESET_TILE = 70;
+var TILESET_PADDING = 2;
+var TILESET_SPACING = 2;
+var TILESET_COUNT_X = 14;
+var TILESET_COUNT_Y = 14;
+
+var LAYER_BACKGROUND =0;
+var LAYER_PLATFORMS =1;
+var LAYER_LADDERS =2;
+
+var LEFT = 0;
+var RIGHT = 1;
+
+var ANIM_IDLE_LEFT = 0;
+var ANIM_JUMP_LEFT = 1;
+var ANIM_WALK_LEFT = 2;
+var ANIM_IDLE_RIGHT = 3;
+var ANIM_JUMP_RIGHT = 4;
+var ANIM_WALK_RIGHT = 5;
+
+var ANIM_MAX = 6;
+
+var tileset = document.createElement("img");
+tileset.src = "tileset.png";
+
 // load an image to draw
 //var chuckNorris = document.createElement("img");
 //chuckNorris.src = "hero.png";
@@ -51,43 +80,10 @@ var enemy = new enemy();
 
 var cells = [];
 
-function pixelToTile(pixel)
-{
-	return Math.floor(pixel / TILE);
-}
-
-function tileToPixel(tile_coord)
-{
-	return tile_coord * TILE;
-}
-
-function cellAtTileCoord(layer, tx, ty)
-{
-	if (tx < 0 || tx > MAP.tw)
-	{
-		return 1;
-	}
-	if(ty >= MAP.th)
-	{
-		return 0;
-	}
-	return cells[layer][tx][ty];
-}
-
-function cellAtPixelCoord(layer, x, y)
-{
-	var tx = pixelToTile(x);
-	var ty = pixelToTile(y);
-	
-	return cellAtTileCoord(layer, tx, ty);
-}
-
-
-
 function initializeCollision()
 {
 	//loop through each layer
-	for(layerIdx = 0; layerIdx < LAYER_COUNT; layerIdx++)
+	for(var layerIdx = 0; layerIdx < LAYER_COUNT; ++layerIdx)
 	{
 		cells[layerIdx] = [];
 		var idx = 0;
@@ -102,11 +98,11 @@ function initializeCollision()
 			{
 				if(stage1.layers[layerIdx].data[idx]!=0){
 					cells[layerIdx][y][x] =1;
-					cells[layerIdx][y-1][x] = 1;
-					cells[layerIdx][y-1][x+1] = 1;
 					cells[layerIdx][y][x+1] = 1;
+					cells[layerIdx][y-1][x+1] = 1;
+					cells[layerIdx][y-1][x] = 1;
 				}
-				else if(cells[layerIdx][x][y]!=1)
+				else if(cells[layerIdx][y][x]!=1)
 				{
 					cells[layerIdx][y][x] =0;
 				}
@@ -116,6 +112,89 @@ function initializeCollision()
 		}
 	}
 }
+
+function tileToPixel(tile_coord)
+{
+	return tile_coord * TILE;
+}
+
+function pixelToTile(pixel)
+{
+	return Math.floor(pixel / TILE);
+}
+
+
+function cellAtTileCoord(layer, tx, ty)
+{
+	if (tx < 0 || tx > MAP.tw || ty < 0)
+	{
+		return 1;
+	}
+	if(ty >= MAP.th)
+	{
+		return 0;
+	}
+	
+	return cells[layer][ty][tx];
+}
+
+function cellAtPixelCoord(layer, x, y)
+{
+	var tx = pixelToTile(x);
+	var ty = pixelToTile(y);
+	
+	return cellAtTileCoord(layer, tx, ty);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+function drawMap()
+{
+	
+	if(typeof(stage1) === "undefined")
+	{
+		alert("ADD 'stage 1' TO JSON FILE");
+	}
+
+	for(var layerIdx=0; layerIdx<LAYER_COUNT; ++layerIdx)
+	{
+		var idx = 0;
+		for(var y = 0; y<stage1.layers[layerIdx].height; ++y)
+		{
+			for(var x = 0; x<stage1.layers[layerIdx].width; ++x)
+			{
+				var tileIndex = stage1.layers[layerIdx].data[idx] - 1;
+				
+				if(tileIndex != -1)
+				{
+					var sx = TILESET_PADDING + (tileIndex % TILESET_COUNT_X)*(TILESET_TILE + TILESET_SPACING);
+					
+					var sy = TILESET_PADDING + (Math.floor(tileIndex/TILESET_COUNT_X))*(TILESET_TILE + TILESET_SPACING);
+					
+					var dx = x * TILE;
+					
+					var dy = (y - 1) * TILE;
+					
+					context.drawImage(tileset,sx,sy,TILESET_TILE,TILESET_TILE,x*TILE,(y-1)*TILE,TILESET_TILE,TILESET_TILE);
+				}
+				++idx;
+			}
+		}
+	}
+}
+
 
 function run()
 {
@@ -127,11 +206,15 @@ function run()
 	
 	//context.drawImage(chuckNorris, SCREEN_WIDTH/2 - chuckNorris.width/2, SCREEN_HEIGHT/2 - chuckNorris.height/2);
 	
-	enemy.update(deltaTime);
-	enemy.draw();
+	//enemy.update(deltaTime);
+	//enemy.draw();
+	
+	console.log(player.position.toString());
 	
 	player.update(deltaTime);
 	player.draw();
+	
+	
 	
 	// update the frame counter 
 	fpsTime += deltaTime;
@@ -153,6 +236,7 @@ function run()
 	
 	
 }
+initializeCollision();
 
 
 //-------------------- Don't modify anything below here
