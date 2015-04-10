@@ -40,8 +40,10 @@ var fps = 0;
 var fpsCount = 0;
 var fpsTime = 0;
 
+var timer = 0;
+
 var LAYER_COUNT = 3;
-var MAP = {tw:70, th:70};
+var MAP = {tw:60, th:15};
 
 var TILE = 70;
 var TILESET_TILE = 70;
@@ -60,11 +62,13 @@ var RIGHT = 1;
 var ANIM_IDLE_LEFT = 0;
 var ANIM_JUMP_LEFT = 1;
 var ANIM_WALK_LEFT = 2;
+
 var ANIM_IDLE_RIGHT = 3;
 var ANIM_JUMP_RIGHT = 4;
 var ANIM_WALK_RIGHT = 5;
+var ANIM_CLIMB = 6;
 
-var ANIM_MAX = 6;
+var ANIM_MAX = 7;
 
 var tileset = document.createElement("img");
 tileset.src = "tileset.png";
@@ -77,6 +81,14 @@ var keyboard = new Keyboard();
 var player = new Player();
 var enemy = new enemy();
 
+var bgMusic = new Howl({
+	urls:["turok.mp3"],
+	loop:true,
+	buffer:true,
+	volume:0.5
+});
+
+bgMusic.play();
 
 var cells = [];
 
@@ -98,9 +110,6 @@ function initializeCollision()
 			{
 				if(stage1.layers[layerIdx].data[idx]!=0){
 					cells[layerIdx][y][x] =1;
-					cells[layerIdx][y][x+1] = 1;
-					cells[layerIdx][y-1][x+1] = 1;
-					cells[layerIdx][y-1][x] = 1;
 				}
 				else if(cells[layerIdx][y][x]!=1)
 				{
@@ -126,6 +135,7 @@ function pixelToTile(pixel)
 
 function cellAtTileCoord(layer, tx, ty)
 {
+	ty ++;
 	if (tx < 0 || tx > MAP.tw || ty < 0)
 	{
 		return 1;
@@ -142,6 +152,7 @@ function cellAtPixelCoord(layer, x, y)
 {
 	var tx = pixelToTile(x);
 	var ty = pixelToTile(y);
+	
 	
 	return cellAtTileCoord(layer, tx, ty);
 }
@@ -160,7 +171,7 @@ function cellAtPixelCoord(layer, x, y)
 
 
 
-function drawMap()
+function drawMap(offsetX, offsetY)
 {
 	
 	if(typeof(stage1) === "undefined")
@@ -183,11 +194,11 @@ function drawMap()
 					
 					var sy = TILESET_PADDING + (Math.floor(tileIndex/TILESET_COUNT_X))*(TILESET_TILE + TILESET_SPACING);
 					
-					var dx = x * TILE;
+					var dx = x * TILE - offsetX;
 					
-					var dy = (y - 1) * TILE;
+					var dy = (y - 1) * TILE - offsetY;
 					
-					context.drawImage(tileset,sx,sy,TILESET_TILE,TILESET_TILE,x*TILE,(y-1)*TILE,TILESET_TILE,TILESET_TILE);
+					context.drawImage(tileset,sx,sy,TILESET_TILE,TILESET_TILE,dx,dy,TILESET_TILE,TILESET_TILE);
 				}
 				++idx;
 			}
@@ -196,25 +207,112 @@ function drawMap()
 }
 
 
+
+
+
 function run()
 {
 	
-	context.fillStyle = "#7EC0EE";		
+	context.fillStyle = "#7ec0ee";		
 	context.fillRect(0, 0, canvas.width, canvas.height);
-	drawMap();
+	
+	var xScroll = player.position.x - player.startPos.x;
+	var yScroll = 0;
+	
+	if(xScroll <0)
+	{
+		xScroll = 0;
+	}
+	if(xScroll > MAP.tw *TILE - canvas.width)
+	{
+		xScroll = MAP.tw *TILE - canvas.width
+	}
+	
+	drawMap(xScroll, yScroll);
 	var deltaTime = getDeltaTime();
 	
+	timer += deltaTime;
+	
 	//context.drawImage(chuckNorris, SCREEN_WIDTH/2 - chuckNorris.width/2, SCREEN_HEIGHT/2 - chuckNorris.height/2);
+	for(var y = 0; y<stage1.layers[LAYER_PLATFORMS].height; ++y)
+	{
+		for(var x = 0; x<stage1.layers[LAYER_PLATFORMS].width; ++x)
+		{
+			if ( cellAtTileCoord(LAYER_PLATFORMS, x, y) )
+			{
+				
+			}
+		}
+	}
 	
-	//enemy.update(deltaTime);
-	//enemy.draw();
 	
-	console.log(player.position.toString());
+	//console.log(player.position.toString());
 	
-	player.update(deltaTime);
-	player.draw();
+	player.update(deltaTime, xScroll, yScroll);
+	player.draw(xScroll, yScroll);
+	
+	enemy.update(deltaTime);
+	enemy.draw(xScroll, yScroll);
+	
+	var HUD = document.createElement("img");
+
+	HUD.src = "doom.png";
+	
+	if(player.position.y > canvas.height)
+	{
+		player.health--
+		if(player.health <= 0)
+		{
+			player.velocity.y = 0;
+			player.position.set(player.startPos.x, player.startPos.y);	
+		}
+	}
+	
+	//optional doom visual damage representation.
+	if(player.health < 100)
+	{
+		HUD.src = "doom2.png";
+		if(player.health < 50)
+		{
+			HUD.src = "doom3.png";
+		}
+	}
+	else
+	{
+		HUD.src = "doom.png";
+	}
+	
+	context.drawImage(HUD, canvas.height/2, canvas.width - 1650);
+	
+	context.fillStyle = "red";
+	context.font="69px DooM";
+	var textToDisplay = player.health + "%";
+	context.fillText(textToDisplay, canvas.height/2, canvas.width - 1580);
+	
+	context.fillStyle = "red";
+	context.font="69px DooM";
+	var textToDisplay = player.armor + "%";
+	context.fillText(textToDisplay, canvas.height + 160, canvas.width - 1580);
 	
 	
+	
+	
+	
+
+	
+	context.fillStyle = "black";
+	context.font = "32px DooM";
+	
+	var timerSeconds = Math.floor(timer);
+	var timerMilliseconds = Math.floor((timer - timerSeconds) * 10);
+	var textToDisplay = "Level Timer: " + Math.floor(timer) + ":" + timerMilliseconds;
+	context.fillText(textToDisplay, 30 ,50);
+	
+	if(player.health <= 0)
+	{
+		player.position.set(canvas.width/ 2, canvas.height / 2);
+		player.health = 100;
+	}
 	
 	// update the frame counter 
 	fpsTime += deltaTime;

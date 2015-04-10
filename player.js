@@ -1,29 +1,36 @@
 var Player = function()
 {
-	this.sprite = new Sprite("banjo.png");
+	this.sprite = new Sprite("ChuckNorris.png");
 	
 	//set up animations
-	this.sprite.buildAnimation(10, 10, 95, 128, 0.05, [0,1,2,3,4,5]);//LEFT IDLE ANIMATION
-	this.sprite.buildAnimation(10, 10, 95, 128, 0.05, [8,9,10,11,12]);//LEFT JUMP ANIMATION
-	this.sprite.buildAnimation(10, 10, 95, 128, 0.05, [13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26]);//LEFT WALK ANIMATION
-	this.sprite.buildAnimation(10, 10, 95, 128, 0.05, [52,53,54,55,56,57,58,59]);//RIGHT IDLE ANIMATION
-	this.sprite.buildAnimation(10, 10, 95, 128, 0.05, [60,61,62,63,64]);//RIGHT JUMP ANIMATION
-	this.sprite.buildAnimation(10, 10, 95, 128, 0.05, [65,66,67,68,69,70,71,72,73,74,75,76,77,78]);//RIGHT WALK ANIMATION
 	
-
+	this.sprite.buildAnimation(12, 8, 165, 126, 0.05, [0,1,2,3,4,5,6,7]);//LEFT IDLE ANIMATION
+	this.sprite.buildAnimation(12, 8, 165, 126, 0.05, [8,9,10,11,12]);//LEFT JUMP ANIMATION
+	this.sprite.buildAnimation(12, 8, 165, 126, 0.05, [13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26]);//LEFT WALK ANIMATION
+	this.sprite.buildAnimation(12, 8, 165, 126, 0.05, [52,53,54,55,56,57,58,59]);//RIGHT IDLE ANIMATION
+	this.sprite.buildAnimation(12, 8, 165, 126, 0.05, [60,61,62,63,64]);//RIGHT JUMP ANIMATION
+	this.sprite.buildAnimation(12, 8, 165, 126, 0.05, [65,66,67,68,69,70,71,72,73,74,75,76,77,78]);//RIGHT WALK ANIMATION
+	this.sprite.buildAnimation(12, 8, 165, 126, 0.05, [42,43,44,45,46,47,48,49,50,51,52]);//CLIMBING
+	
+	this.armor = 0;
+	this.health = 100;
 	
 	this.image = document.createElement("img");
 	
+	this.startPos = new Vector2();
+	this.startPos.set(canvas.width/2, canvas.height / 2 /4)
+	
 	this.position = new Vector2();
-	this.position.set(canvas.width / 2, canvas.height / 2 /2);
+	this.position.set(this.startPos.x, this.startPos.y);
 	
 	this.velocity = new Vector2();
 	
-	this.width = 95;
-	this.height = 128;
+	this.width = 165;
+	this.height = 126;
 	
 	this.jumping = false;
 	this.falling = false;
+	this.climbing = false;
 	
 	this.angularVelocity = 0;
 	this.rotation = 0;
@@ -36,15 +43,31 @@ var Player = function()
 	}
 };
 
+
+
 //var playerIsDrawn = true;
 
 Player.prototype.changeDirectionalAnimation = function(leftAnim, rightAnim)
 {	
-	
+
+	if (this.direction == LEFT)
+	{
+		if (this.sprite.currentAnimation != leftAnim)
+		{
+			this.sprite.setAnimation(leftAnim);
+		}
+	}
+	else if(this.direction == RIGHT)
+	{
+		if (this.sprite.currentAnimation != rightAnim)
+		{
+			this.sprite.setAnimation(rightAnim);
+		}
+	}
 }
 
 
-Player.prototype.update = function(deltaTime)
+Player.prototype.update = function(deltaTime, offsetX, offsetY)
 {
 	this.sprite.update(deltaTime);
 	
@@ -56,17 +79,39 @@ Player.prototype.update = function(deltaTime)
 	var jumpForce = 47500;
 	
 	acceleration.y = playerGravity;
+		
+
+	
+	
+	var collisionOffset = new Vector2();
+	collisionOffset.set(-8, this.height/2 - TILE);
+	
+	var collision_pos = this.position.add(collisionOffset);
+	
+	
+	var tx = pixelToTile(collision_pos.x);
+	var ty = pixelToTile(collision_pos.y);
+		
+	
+	
+	var nx = this.position.x % TILE;
+	var ny = this.position.y % TILE;
+	
+	var cell = cellAtTileCoord(LAYER_PLATFORMS, tx, ty);
+	var cell_right = cellAtTileCoord(LAYER_PLATFORMS, tx+1, ty);
+	var cell_down = cellAtTileCoord(LAYER_PLATFORMS, tx, ty+1);
+	var cell_diag = cellAtTileCoord(LAYER_PLATFORMS, tx+1, ty+1);
+	
+	var cell_ladder = cellAtTileCoord(LAYER_LADDERS, tx, ty);
 	
 	if(keyboard.isKeyDown(keyboard.KEY_LEFT))
 	{
 		acceleration.x -= playerAccel;
-		this.image.src = "hero2.png"
 		this.direction = LEFT;
 	}
 	if(keyboard.isKeyDown(keyboard.KEY_RIGHT))
 	{
 		acceleration.x += playerAccel;
-		this.image.src = "hero.png"
 		this.direction = RIGHT;
 	}
 
@@ -86,6 +131,14 @@ Player.prototype.update = function(deltaTime)
 	}
 	
 	
+	if(keyboard.isKeyDown(keyboard.KEY_UP) && cell_ladder)
+	{
+		acceleration.y -= playerAccel;
+	}
+
+	
+
+	
 	
 	var dragVector = this.velocity.multiplyScalar(playerDrag);
 	dragVector.y = 0;
@@ -96,6 +149,11 @@ Player.prototype.update = function(deltaTime)
 	this.position = this.position.add(this.velocity.multiplyScalar(deltaTime));
 	
 	//animation logic
+	
+	
+	
+
+
 	if(this.jumping || this.falling)
 	{
 		this.changeDirectionalAnimation(ANIM_JUMP_LEFT, ANIM_JUMP_RIGHT);
@@ -112,43 +170,13 @@ Player.prototype.update = function(deltaTime)
 		}
 	}
 	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	var collisionOffset = new Vector2();
-	collisionOffset.set(-TILE/2, this.height/2 - TILE);
-	
-	var collision_pos = this.position.add(collisionOffset);
-	
-	collision_pos.y = this.position.y +this.height/2 - TILE;
-	collision_pos.x = this.position.x - TILE/2;
-	
-	
-	var tx = pixelToTile(this.position.x);
-	var ty = pixelToTile(this.position.y);
-	
-	
-	
-	
-	var nx = this.position.x % TILE;
-	var ny = this.position.y % TILE;
-	
-	var cell = cellAtTileCoord(LAYER_PLATFORMS, tx, ty);
-	var cell_right = cellAtTileCoord(LAYER_PLATFORMS, tx+1, ty);
-	var cell_down = cellAtTileCoord(LAYER_PLATFORMS, tx, ty+1);
-	var cell_diag = cellAtTileCoord(LAYER_PLATFORMS, tx+1, ty+1);
+
 	
 	if(this.velocity.y > 0)
 	{
 		if((cell_down && !cell) || (cell_diag && !cell_right && nx))
 		{
-			this.position.y = tileToPixel(ty);
+			this.position.y = tileToPixel(ty) - collisionOffset.y;
 			this.velocity.y = 0;
 			ny = 0;
 			
@@ -160,7 +188,7 @@ Player.prototype.update = function(deltaTime)
 	{
 		if((cell && !cell_down) || (cell_right && !cell_diag && nx))
 		{
-			this.position.y = tileToPixel(ty +1);
+			this.position.y = tileToPixel(ty +1) - collisionOffset.y;
 			this.velocity.y = 0;
 			
 			cell = cell_down;
@@ -177,7 +205,7 @@ Player.prototype.update = function(deltaTime)
 	{
 		if((cell_right && !cell) || (cell_diag && !cell_down && ny))
 		{
-			this.position.x = tileToPixel(tx);
+			this.position.x = tileToPixel(tx) - collisionOffset.x;
 			this.velocity.x = 0;
 			
 		}
@@ -186,15 +214,21 @@ Player.prototype.update = function(deltaTime)
 	{
 		if((cell && !cell_right) || (cell_down && !cell_diag && ny))
 		{
-			this.position.x = tileToPixel(tx +1);
+			this.position.x = tileToPixel(tx + 1) - collisionOffset.x;
 			this.velocity.x = 0;
 			
 		}
 	}
 
+
+	
+
+	
 }
 
-Player.prototype.draw = function()
-{
-	this.sprite.draw(context, this.position.x, this.position.y);
+
+
+Player.prototype.draw = function(offsetX, offsetY)
+{	
+	this.sprite.draw(context, this.position.x - offsetX, this.position.y - offsetY);
 };
